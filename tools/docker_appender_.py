@@ -27,9 +27,8 @@ from containerregistry.client.v2_2 import docker_image as v2_2_image
 from containerregistry.client.v2_2 import docker_session
 from containerregistry.tools import logging_setup
 from containerregistry.tools import patched
+from containerregistry.transport import transport
 from containerregistry.transport import transport_pool
-
-import httplib2
 
 parser = argparse.ArgumentParser(
     description='Append tarballs to an image in a Docker Registry.')
@@ -44,6 +43,10 @@ parser.add_argument('--tarball', action='store', help='The tarball to append.')
 parser.add_argument(
     '--dst-image', action='store', help='The name of the new image.')
 
+parser.add_argument(
+  '--cacert', help='The CA certificate to use.'
+)
+
 _THREADS = 8
 
 
@@ -56,7 +59,8 @@ def main():
     raise Exception('--src-image, --dst-image and --tarball are required '
                     'arguments.')
 
-  transport = transport_pool.Http(httplib2.Http, size=_THREADS)
+  transport_factory = transport.Factory().WithCaCert(args.cacert)
+  transports_pool = transport_pool.Http(transport_factory.Build, size=_THREADS)
 
   # This library can support push-by-digest, but the likelihood of a user
   # correctly providing us with the digest without using this library
@@ -68,12 +72,12 @@ def main():
   # client logic.
   creds = docker_creds.DefaultKeychain.Resolve(src)
   logging.info('Pulling v2.2 image from %r ...', src)
-  with v2_2_image.FromRegistry(src, creds, transport) as src_image:
+  with v2_2_image.FromRegistry(src, creds, transports_pool) as src_image:
     with open(args.tarball, 'rb') as f:
       new_img = append.Layer(src_image, f.read())
 
   creds = docker_creds.DefaultKeychain.Resolve(dst)
-  with docker_session.Push(dst, creds, transport, threads=_THREADS,
+  with docker_session.Push(dst, creds, transports_pool, threads=_THREADS,
                            mount=[src.as_repository()]) as session:
     logging.info('Starting upload ...')
     session.upload(new_img)
