@@ -25,7 +25,7 @@ function generate_image() {
   local target=$1
 
   cat > Dockerfile <<EOF
-FROM amd64/alpine
+FROM alpine
 RUN head -c100 /dev/urandom > /tmp/random.txt
 EOF
   docker build -t random .
