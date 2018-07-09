@@ -74,7 +74,7 @@ parser.add_argument(
     '--oci', action='store_true', help='Push the image with an OCI Manifest.')
 
 parser.add_argument(
-  '--cacert', help='A CA certificate to use'
+  '--cacert', help='The CA certificate to use.'
 )
 
 _THREADS = 8
@@ -141,7 +141,9 @@ def main():
     logging.fatal('--digest and --layer must have matching lengths.')
     sys.exit(1)
 
-  transport_factory = transport.Factory().WithCaCert(args.cacert)
+  transport_factory = transport.Factory()
+  if args.cacert is not None:
+    transport_factory = transport_factory.WithCaCert(args.cacert)
   retry_factory = retry.Factory().WithSourceTransportFactory(transport_factory)
   transports_pool = transport_pool.Http(retry_factory.Build, size=_THREADS)
 

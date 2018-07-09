@@ -70,7 +70,9 @@ def main():
   if not args.name or not args.directory:
     logging.fatal('--name and --directory are required arguments.')
 
-  transport_factory = transport.Factory().WithCaCert(args.cacert)
+  transport_factory = transport.Factory()
+  if args.cacert is not None:
+    transport_factory = transport_factory.WithCaCert(args.cacert)
   retry_factory = retry.Factory().WithSourceTransportFactory(transport_factory)
   transports_pool = transport_pool.Http(retry_factory.Build, size=_THREADS)
 

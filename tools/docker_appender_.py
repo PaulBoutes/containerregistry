@@ -59,7 +59,9 @@ def main():
     raise Exception('--src-image, --dst-image and --tarball are required '
                     'arguments.')
 
-  transport_factory = transport.Factory().WithCaCert(args.cacert)
+  transport_factory = transport.Factory()
+  if args.cacert is not None:
+    transport_factory = transport_factory.WithCaCert(args.cacert)
   transports_pool = transport_pool.Http(transport_factory.Build, size=_THREADS)
 
   # This library can support push-by-digest, but the likelihood of a user

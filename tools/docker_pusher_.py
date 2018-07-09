@@ -86,7 +86,9 @@ def main():
     logging.fatal('--name and --tarball are required arguments.')
     sys.exit(1)
 
-  transport_factory = transport.Factory().WithCaCert(args.cacert)
+  transport_factory = transport.Factory()
+  if args.cacert is not None:
+    transport_factory = transport_factory.WithCaCert(args.cacert)
   retry_factory = retry.Factory().WithSourceTransportFactory(transport_factory)
   transports_pool = transport_pool.Http(retry_factory.Build, size=_THREADS)
 
